@@ -12,7 +12,7 @@ proj/
 ├──data/
 ├──doc/
 ├──figs/
-├──lib/
+├──lib/Sen Dai sd3227 Project1.Rmd
 ├──output/
 ├── README
 ```
