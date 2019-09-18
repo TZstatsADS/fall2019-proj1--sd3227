@@ -1,7 +1,7 @@
 # Applied Data Science @ Columbia
 ## Fall 2019
 ## Project 1: A "data story" on the songs of our times
-##Sen Dai sd3227
+## Sen Dai sd3227
 For me, the goal of this project is to solve my three questions by applying tools from natural language processing and text mining:
 1.What's the popular genres of music in different decades? 
 2.What's the difference of lyrics in different genres of music? 
