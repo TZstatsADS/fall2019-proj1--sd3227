@@ -1,0 +1,260 @@
+---
+title: 'Sen Dai sd 3227 Project1'
+output:
+  html_document:
+    df_print: paged
+---
+    Nowadays, everyone loves to listen to music. They not only love the melody, but also love the lyrics. However, different genres of music have different type of lyrics. The interesting thing is, that we can get lots of hints from analyzing the lyrics instead of listening the music. To get the secret of the lyrics, I decide to analysis some lyrics of different genres from 1970s to 2010s by using R. I only foucs on three aspect:
+    1.What's the popular genres of music in different decades? 
+    2.What's the difference of lyrics in different genres of music? 
+    3.What's the habit of the artist to write the lyrics?Are they Shakespeare or Dumas?
+    I analysis the data by different methods and get lots of interesting results.I'll show what i did step by step and tell a fantastic "data story".  
+    Firstly, I load all the required libraries.(step0)
+
+###### Step0 - Load all the required libraries ###### 
+```{r load libraries, message=FALSE, warning=FALSE, include=FALSE}
+#in this step, i load all the required libraries that i need to use
+library(tidyverse) #design philosophy, grammar, and data structures
+library(tidytext) #for text mining
+library(DT) #R interface to java library
+library(tm) #for text mining
+library(data.table) #for fast aggregation of large data
+library(scales) #aesthetics
+library(plotly) #for visualization
+library(wordcloud) #for visualization
+library(wordcloud2) #for visualization
+library(ggplot2) #for visualization
+library(gridExtra) #for visualization
+library(ngram) #tokenizing 
+library(shiny) #build interactive web apps
+library(dplyr) #data manipulation
+```
+    Secondly, I load and clean the data for future use.(step1-3)
+
+###### Step1 - Load the processed data and artist to use ###### 
+```{r include=FALSE}
+#in this step, i load the processed data and artist data to analysis
+# load lyrics processed data
+load("//Users//seandai//Desktop//processed_lyrics.RData")
+
+# load artist information
+dt_artist <- read.table("//Users//seandai//Desktop//artists.txt",header = FALSE,sep = ' ')
+```
+
+###### Step2 - Preparation of data for further use ###### 
+```{r include=FALSE}
+#in this step, i set some data for the future use 
+
+#the list of genres of lyrics
+lyrics_list <- c("Country", "Electronic", "Folk", "Hip-Hop", "Indie", "Jazz", "Metal", "Not Available", "Other", "Pop", "R&B", "Rock")
+
+#the list of decades of lyrics
+time_list <- c("1970s", "1980s", "1990s", "2000s", "2010s")
+
+#preparation of the processed data in stemmedwords for analysing word frequency 
+corpus <- VCorpus(VectorSource(dt_lyrics$stemmedwords))
+dt_word <- tidy(corpus) %>%
+  select(text) %>%
+  mutate(id = row_number()) %>%
+  unnest_tokens(word, text)
+```
+
+###### Step3 - Create the decade column for the data ###### 
+```{r include=FALSE}
+#get the summary of the lyrics data to know the range of decades
+summary(dt_lyrics)
+
+#create the decades column
+dt_lyrics_decade <- dt_lyrics %>%
+  mutate(decade = 
+           ifelse(dt_lyrics$year %in% 1970:1979, "1970s", 
+           ifelse(dt_lyrics$year %in% 1980:1989, "1980s", 
+           ifelse(dt_lyrics$year %in% 1990:1999, "1990s", 
+           ifelse(dt_lyrics$year %in% 2000:2009, "2000s", 
+           ifelse(dt_lyrics$year %in% 2010:2019, "2010s", "NA"))))))
+
+```
+
+###### Step4 - Analysis data: Song stats graphs of different genres in each decades ######
+
+    Rightnow,I get a question. I really want to know what kind of music do people love at differet decades. To solve this question, I plot some graphs to get the answer. 
+    From Fig1.1, we can see that different type of music at different decades.It's difficult to know what kind of music do people like from 1970s to 1990s since the data is not enough. We can easily find out Rock is the most popular music in 2000s, the second popular one is Pop and the third one is Metal. However, in 2010s, the third popular changed from Metal to Hip Hop. Hence we can see that with the time, listener change their preference, but not a lot. 
+
+```{r echo=FALSE}
+#the graph of different genres in each decades [Fig1.1]
+dt_lyrics_decade %>%filter(decade != "NA") %>%group_by(decade, genre) %>%summarise(number_of_songs = n()) %>%ggplot() + geom_bar(aes(x = decade, y = number_of_songs, fill = genre), stat = "identity",position="dodge")+theme(plot.title = element_text(hjust = 0.1),legend.title = element_blank(),panel.grid.minor = element_blank()) + ggtitle("Fig1.1") +labs(x = "decades", y ="")
+```
+
+    From Fig1.2, we can see that before 2000s, the number of music is just a little. However there are lots of music released in 2000s, and the number of music decrease in 2010s. Maybe there were something happen in 2000s that stimulated the music market. For my own experience, I begin to listen American music in 2005. I think this rocket in 2000s because of the Internet. People can get the music easily on the Internet. 
+```{r echo=FALSE}
+#the graph of different genres in each decades [Fig1.2]
+dt_lyrics_decade %>%filter(decade != "NA") %>%group_by(decade, genre) %>%summarise(number_of_songs = n()) %>%ggplot() + geom_bar(aes(x = decade, y = number_of_songs, fill = genre), stat = "identity")+theme(plot.title = element_text(hjust = 0.1),legend.title = element_blank(),panel.grid.minor = element_blank()) + ggtitle("Fig1.2") +labs(x = "decades", y ="")
+```
+
+    From Fig1.3, we can get some general information about each genres of music. For example, Rock is the most popular type of music no matter in which decades; More and more people begin to listen Hip-Hop, Electronic and Metal; Recently, R&B is not as popular as before; Just a few people is interested in Indie no matter in which decades.
+```{r echo=FALSE}
+#the graph of different genres in each decade [Fig1.3]
+dt_lyrics_decade %>%filter(decade != "NA") %>%group_by(decade, genre) %>%summarise(number_of_songs = n()) %>%ggplot() + geom_bar(aes(x = decade, y = number_of_songs, fill = genre), stat = "identity",position="fill")+theme(plot.title = element_text(hjust = 0.1),legend.title = element_blank(),panel.grid.minor = element_blank()) + ggtitle("Fig1.3") +labs(x = "decades", y ="")
+```
+    
+    After this three figures, we can get some basic information about the lyrics from 1970s to 2010s. However, to get more interesting things, we need to do more analyzing.
+    
+
+###### Step5 - Analysis data: Word frequency in different genre ######
+    Suddenly, another question pop in my mind. What are the lyrics really talk about? Do the different genres tell the same kind of story of music or different? To solve this problem, I begin a new analyzing. 
+```{r include=FALSE}
+#the function to get high frequency word for different genres
+wordfrequency <- function(x1){
+count(filter(dt_word, id %in% which(dt_lyrics_decade$genre == x1)), word, sort = TRUE) %>%
+      slice(1:50)%>%
+        head(50)}
+```
+    To get what kind of word is the popular word in different genres, I try to get the 50 top high frequency word for each genres.In this way we can analysis the high frequency word and compare with each other to find the secret behind the lyrics. Rightnow, I'll post the top 50 frequency word for each genres music:
+
+# the top 50 high frequency word for Country
+```{r echo=FALSE}
+wordfrequency(lyrics_list[1]);
+```
+# the top 50 high frequency word for Electronic
+```{r echo=FALSE}
+wordfrequency(lyrics_list[2]);
+```
+# the top 50 high frequency word for Folk
+```{r echo=FALSE}
+wordfrequency(lyrics_list[3]);
+```
+# the top 50 high frequency word for Hip-Hop
+```{r echo=FALSE}
+wordfrequency(lyrics_list[4]);
+```
+# the top 50 high frequency word for Indie
+```{r echo=FALSE}
+wordfrequency(lyrics_list[5]);
+```
+# the top 50 high frequency word for Jazz
+```{r echo=FALSE}
+wordfrequency(lyrics_list[6]);
+```
+# the top 50 high frequency word for Metal
+```{r echo=FALSE}
+wordfrequency(lyrics_list[7]);
+```
+# the top 50 high frequency word for Pop
+```{r echo=FALSE}
+wordfrequency(lyrics_list[10]);
+```
+# the top 50 high frequency word for R&B
+```{r echo=FALSE}
+wordfrequency(lyrics_list[11]);
+```
+# the top 50 high frequency word for Rock
+```{r echo=FALSE}
+wordfrequency(lyrics_list[12]);
+```
+    From the data, we can find lots of interest things. Firstly, we can see that love is the most common word in each type of music. I think this is because music is a way for people to express the emotion. Artists like to show what they love in the song(a person,a luxury car, a kind of spirit,etc). Secondly, baby is a very interest word in the lyrics, lots of music like this word. we can see that baby is not in the top 50 word only at Metal. Hence we can surmise that Metal music talk more about spirit and soul instead of love,friend and family. Thirdly, lyrics can be the icon for different type of music. I want to talk two typical example, one is about Hip-Hop music, We know the Hip-Hop music is about sex,drug and money. Hence there are lots of nasty and violent word in Hip-Hop music: shit, bitch, ass, beat, money and so on. It's a kind of icon for Hip-Hop cause it's impossible for people to get "bitch" and "ass" from Country music. For Metal music, it's similar: hell,fire,burn,blood,black,kill are the typical words in Metal. Metal music is kind of aggressive and loud. It's really strange for people to get "blood" and "hell" from Pop music. Fourthly, there are lots of things we can talk about the word frequency in difference genres of music. However, what i want to talk is about the prediction of the creation of lyrics. I get some inspiration from this analyzing, in the future, we can use programming to create lyrics by mechine learning or somethingelse. In this way, maybe we can get some more beautiful lyrics created by AI instead of human being.  
+
+###### Step 6 - Analysis data: Lexical Diversity & Lexical Density ######
+    
+    After this analyzing, I still get one more question. What's the level and habit of these artist? Are they clever writers or just middle school level? To get the answer, I plan to analysis the lexical diversity and lexical density for these lyrics. Lexical diversity is to use measure the variety of vocabulary. The more varied vocabulary in the lyrics, the higher lexical diversity.      
+```{r include=FALSE}
+# get the data of lyrics related with the lexical diversity in years
+dt_lyrics_year_lexi_diversity <- dt_lyrics_decade %>%
+  filter(decade != "NA") %>%
+  unnest_tokens(word,stemmedwords) %>%
+  group_by(song,year,genre,decade) %>%
+  summarise(lexi_diversity = n_distinct(word)) %>%
+  arrange((lexi_diversity)) 
+```
+
+```{r include=FALSE}
+# get the data of lyrics related with the lexical density in years
+dt_lyrics_year_lexi_density <- dt_lyrics_decade %>%
+  filter(decade != "NA") %>%
+  unnest_tokens(word,stemmedwords) %>%
+  group_by(song,year,genre,decade) %>%
+  summarise(lexi_density = n_distinct(word)/n()) %>%
+  arrange((lexi_density)) 
+```
+    Fig2.1 is the graph about the index of lexical diversity of each songs in each year. We can see that before 2000, the lexical diversity is very low. However, after 2000, the lexical diversity becomes higher than before. We can also see the trend of the blue line is going up slightly. In another word, artists open their mind and use more new word in there song. There is a rocket in 2007 and it back to an average level. I think at this time, more and more artists try the new style of their songs and there be something that push the development of music from 2000s to 2010s. I think it's good for the development of american music because more and more artists try the new things and make progress.
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#plot the graph of songs of years related lexical diversity [Fig2.1]
+plot1 <- dt_lyrics_year_lexi_diversity  %>%
+  ggplot(aes(year, lexi_diversity)) +
+    geom_point(color = "black",
+               alpha = .9, 
+               size = 0.02, 
+               position = "jitter") + 
+    stat_smooth(color = "white", se = FALSE, method = "lm") +
+    geom_smooth(aes(x = year, y = lexi_diversity), se = FALSE,
+                color = "blue", lwd = 1) +
+    ggtitle("Fig2.1") +
+    xlab("year") + 
+    ylab("index of lexical diversity") +
+    scale_color_manual(values = 1) +
+    theme_classic()
+plot1
+```
+
+    Fig2.2 is the graph about the index of lexical diversity of each genres of songs in each year.To compare each artists in different genres, we can find lots of interesting things. For Country, Folk, R&B and Jazz, the lexical diversity of them are relative low. I think this is because the style of these music is mature. I can't find the big difference from listening Country music between 1980s and 2010s. However, for Hip-Hop, Pop, and Rock, these kind of music refresh every year. It's just like the fashion, artists should update their lyrics day by day to keep their songs in New Wave. It's really make sense why lexical diversity of these kind of music is high. 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#plot the graph of songs of years related lexical diversity in different genres [Fig2.2]
+plot2 <- dt_lyrics_year_lexi_diversity  %>%
+  ggplot(aes(year, lexi_diversity)) +
+    geom_point(color = "black",
+               alpha = .9, 
+               size = 0.02, 
+               position = "jitter") + 
+    stat_smooth(color = "yellow", se = FALSE, method = "lm") +
+    geom_smooth(aes(x = year, y = lexi_diversity), se = FALSE,
+                color = "blue", lwd = 1) +
+    ggtitle("Fig2.2") +
+    xlab("year") + 
+    ylab("index of lexical diversity") +
+    scale_color_manual(values = 1) +
+    theme_classic() +facet_wrap(genre ~ ., ncol=4)
+plot2
+```
+
+    Rightnow I want to know more about the artists in another way. After talking about the lexical diversity, I want to talk about lexical density. Lexical density is defined as the number of unique words/the number of total words. In this way we can know the repetition of the word. If lexical density decrease, the repetition rate increase.  
+    
+    Fig2.3 is the graph about the index of lexical density of each songs in each year. We can see that the trend of lexical density goes down, which means the repetition goes up. It's hard to say good or bad for music quality, but in my own idea, I think it means the change of the writing style of lyrics from artists. For example, In 1970s, maybe the whole lyrics narrate a story once in the songs; In 2010s, maybe the whole lyrics narrate a story but repeat it twice even three times in the songs. For another example, maybe with the development of music, people focus on melody instead of the lyrics. Hence artists focus more on melody instead of lyrics.
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#plot the graph of songs of years related lexical density [Fig2.3]
+plot3 <- dt_lyrics_year_lexi_density  %>%
+  ggplot(aes(year, lexi_density)) +
+    geom_point(color = "black",
+               alpha = .9, 
+               size = 0.02, 
+               position = "jitter") + 
+    stat_smooth(color = "yellow", se = FALSE, method = "lm") +
+    geom_smooth(aes(x = year, y = lexi_density), se = FALSE,
+                color = "blue", lwd = 1) +
+    ggtitle("Fig2.3") +
+    xlab("year") + 
+    ylab("index of lexical density") +
+    scale_color_manual(values = 1) +
+    theme_classic()
+plot3
+```
+
+    Fig2.4 is the graph about the index of lexical density of each genres of songs in each year. We can get some interesting results from the graph with real life. For Hip-Hop and Metal, we can see a big going-down trend here, which means the repetition rate of these two goes up. Does it mean the quality of music go down? However,from the above analyzing, we can get the Hip-Hop and Metal become more and more popular.Why this happening? Why lyrics become more repetitive and become more popular? The answer is easy: people love it!!! Lots of Hip-Hop and Metal artists perform their songs at live house. To warm up, audience always sing the song with artisits together. If the lyrics are too complex, people who never listen the music don't know how to sing. Hence, to solve this problem, artists use some simple and repeative word in their lyrics that help people to sing the songs with them together.For example, the hip-hop music "My name is " from Eminem have 48-times repetitive lyrics "my name is..." in the song!!!
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#plot the graph of songs of years related lexical density in different genres [Fig2.4]
+plot4 <- dt_lyrics_year_lexi_density  %>%
+  ggplot(aes(year, lexi_density)) +
+    geom_point(color = "black",
+               alpha = .9, 
+               size = 0.02, 
+               position = "jitter") + 
+    stat_smooth(color = "yellow", se = FALSE, method = "lm") +
+    geom_smooth(aes(x = year, y = lexi_density), se = FALSE,
+                color = "blue", lwd = 1) +
+    ggtitle("Fig2.4") +
+    xlab("year") + 
+    ylab("index of lexical density") +
+    scale_color_manual(values = 1) +
+    theme_classic()+facet_wrap(genre ~ ., ncol=4)
+plot4
+```
+
+    After some analyzing, I think I get the answer of all my questions. However, I think it's just a beginning of the analyzing, there are lots of things that we can find by using data science. It's really interesting to get the secret behind the lyrics from natural language processing data mining. Thank you!!!
