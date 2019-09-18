@@ -6,3 +6,13 @@ For me, the goal of this project is to solve my three questions by applying tool
 1.What's the popular genres of music in different decades? 
 2.What's the difference of lyrics in different genres of music? 
 3.What's the habit of the artist to write the lyrics?Are they Shakespeare or Dumas?
+
+```
+proj/
+├──data/
+├──doc/
+├──figs/
+├──lib/
+├──output/
+├── README
+```
