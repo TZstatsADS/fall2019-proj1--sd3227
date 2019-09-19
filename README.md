@@ -10,7 +10,7 @@ For me, the goal of this project is to solve my three questions by applying tool
 ```
 proj/
 ├──data/
-├──doc/Sen_Dai_sd3227_Project1.html;Sen Dai sd 3227 Project1.pdf
+├──doc/Sen_Dai_sd3227_Project1.html;Sen Dai sd 3227 Project1.pdf; Sen Dai sd3227 Project1.md
 ├──figs/fig1.1.JPG; fig1.2.JPG; fig1.3.JPG; fig2.1.JPG; fig2.2.JPG; fig2.3.JPG; fig2.4.JPG; fig backup.png
 ├──lib/
 ├──output/Sen Dai sd3227 Project1.Rmd
