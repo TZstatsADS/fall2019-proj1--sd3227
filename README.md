@@ -6,7 +6,7 @@ Term:Fall 2019
 
 + Project title: The secret behind the lyrics
 
-+T his project is conducted by Sen Dai
++ T his project is conducted by Sen Dai
 
 + Project summary: the goal of this project is to solve my three questions by applying tools from natural language processing and text mining:
 1.What's the popular genres of music in different decades? 
